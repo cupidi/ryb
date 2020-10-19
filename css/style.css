@@ -164,6 +164,15 @@ button.circle:hover {
 }
 
 /* the hex value of the color picked */
+input#color-preview-ryb {
+	margin-top: 10px;
+	font-size: 20px;
+	width: 180px;
+	background-color: #222;
+	text-align: center;
+	color: #ddd;
+	border: none;
+}
 input#color-preview-rgb {
 	margin-top: 10px;
 	font-size: 20px;

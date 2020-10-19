@@ -266,7 +266,7 @@
     [0.163, 0.373, 0.6],
     [0.0,   0.66,  0.2],
     [0.5,   0.0,   0.5],
-    [0.2,   0.094, 0.0]
+    [0,   0, 0.0]
   ];
   var ryb2rgb = (function() {
     // see http://threekings.tk/mirror/ryb_TR.pdf

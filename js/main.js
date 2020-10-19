@@ -36,6 +36,7 @@ var borderwidth_range;
 var brightness_range;
 var colorpreview_div;
 var colorpreviewneutrals_div;
+var colorpreviewryb_input;
 var colorpreviewrgb_input;
 var divisions_range;
 var divisionvariance_range;
@@ -68,7 +69,7 @@ function init() {
   d3.selectAll('a').attr('target', '_blank');
 
   // lifting the mouseup anywhere should affect everything
-  document.onmouseup = function() {
+  document.onmouseup = function () {
     mousedown = false;
   };
 
@@ -78,6 +79,7 @@ function init() {
   brightness_range = document.getElementById('brightness-range');
   colorpreview_div = document.getElementById('color-preview');
   colorpreviewneutrals_div = document.getElementById('color-preview-neutrals');
+  colorpreviewryb_input = document.getElementById('color-preview-ryb');
   colorpreviewrgb_input = document.getElementById('color-preview-rgb');
   divisions_range = document.getElementById('divisions-range');
   divisionvariance_range = document.getElementById('divisionvariance-range');
@@ -95,13 +97,13 @@ function init() {
   title_h1 = document.getElementById('title');
 
   // strokewidth choices
-  strokecolorchoices.forEach(function(hex) {
+  strokecolorchoices.forEach(function (hex) {
     var d = document.createElement('div');
     d.style.display = 'table-cell';
     d.style.backgroundColor = hex;
     d.style.cursor = 'crosshair';
     d.title = hex;
-    d.onclick = function() {
+    d.onclick = function () {
       strokecolor = hex;
       maskcolor = hex;
       svg.selectAll('path.color-wedge').attr('stroke', hex);
@@ -110,13 +112,13 @@ function init() {
         .attr('fill', maskcolor)
         .attr('stroke', maskcolor);
     };
-    d.onmousedown = function() {
+    d.onmousedown = function () {
       mousedown = true;
     };
-    d.onmouseup = function() {
+    d.onmouseup = function () {
       mousedown = false;
     };
-    d.onmouseover = function() {
+    d.onmouseover = function () {
       if (mousedown)
         d.onclick.call(this);
     };
@@ -125,7 +127,7 @@ function init() {
 
   // Setup pure CSS accordion
   var accordionsections = document.getElementsByClassName('accordion-section');
-  Array.prototype.forEach.call(accordionsections, function(section) {
+  Array.prototype.forEach.call(accordionsections, function (section) {
     var button = section.getElementsByTagName('button')[0];
     var content = section.getElementsByClassName('content')[0];
     var maxHeight = content.offsetHeight + 'px';
@@ -135,7 +137,7 @@ function init() {
     span.style.marginRight = '10px';
     button.appendChild(span);
 
-    button.onclick = function() {
+    button.onclick = function () {
       if (content.classList.contains('hidden')) {
         content.style.maxHeight = maxHeight;
         content.classList.remove('hidden');
@@ -178,7 +180,13 @@ function brightness_range_oninput(t) {
 
   // figure out the background color
   svg.selectAll('path.color-wedge')
-    .attr('fill', function(d) {
+    .attr('ryb', function (d, j) {
+      var d3this = d3.select(this);
+      var ryb = d.data.neutrals[+d3this.attr('ring')];
+      var color = RXB.stepcolor(ryb, brightness / 255, 255);
+      return d3.rgb.apply(d3, color);
+    })
+    .attr('fill', function (d) {
       var d3this = d3.select(this);
 
       var ryb = d.data.neutrals[+d3this.attr('ring')];
@@ -217,7 +225,7 @@ function strokewidth_range_oninput(t) {
   strokewidth_range.textContent = strokewidth + 'px';
 
   svg.selectAll('path.color-wedge')
-    .attr('stroke-width', function(d) {
+    .attr('stroke-width', function (d) {
       return strokewidth + 'px';
     })
     .attr('shape-rendering', strokewidth === 0 ? 'crispEdges' : 'auto');
@@ -270,7 +278,7 @@ function borderwidth_range_oninput(t) {
   margin = borderwidth + 10;
 
   d3.select(svg.node().parentNode)
-    .attr('viewBox', (-margin) + ' ' + (-margin) + ' ' + (radius*2+margin*2) + ' '  + (radius*2+margin*2));
+    .attr('viewBox', (-margin) + ' ' + (-margin) + ' ' + (radius * 2 + margin * 2) + ' ' + (radius * 2 + margin * 2));
   svg.select('circle')
     .attr('r', radius + borderwidth);
   apply_mask(lastmasktype);
@@ -283,7 +291,7 @@ function bordercolor_range_oninput(t) {
 
   svg.select('#grad1')
     .selectAll('stop')
-    .attr('stop-color', function(d, i) {
+    .attr('stop-color', function (d, i) {
       return d3.rgb(bordercolors[i]).darker(bordercolor / 10);
     });
   svg.select('g.mask')
@@ -333,7 +341,13 @@ function enable_custom_interpolation() {
 
 function colorize() {
   svg.selectAll('path.color-wedge')
-    .attr('fill', function(d) {
+    .attr('ryb', function (d, j) {
+      var d3this = d3.select(this);
+      var ryb = d.data.neutrals[+d3this.attr('ring')];
+      var color = RXB.stepcolor(ryb, brightness / 255, 255);
+      return d3.rgb.apply(d3, color);
+    })
+    .attr('fill', function (d) {
       var d3this = d3.select(this);
 
       var ryb = d.data.neutrals[+d3this.attr('ring')];
@@ -351,12 +365,12 @@ function create() {
   try {
     // regenerate the wheel on create
     document.getElementsByTagName('svg')[0].remove();
-  } catch(e) {}
+  } catch (e) { }
 
   // we generate a rainbow using the divisions set, and map that to a colors
   // ryb representation and its corresponding neutrals
-  var data = RXB.rainbow(divisions).map(function(ryb) {
-    return {ryb: ryb, neutrals: RXB.neutrals(ryb, 0, rings*2-1)};
+  var data = RXB.rainbow(divisions).map(function (ryb) {
+    return { ryb: ryb, neutrals: RXB.neutrals(ryb, 0, rings * 2 - 1) };
   });
 
   // adjust the mask rotation step
@@ -367,7 +381,7 @@ function create() {
   svg = d3.select('#content').append('svg')
     .attr('width', '100%')
     .attr('height', '100%')
-    .attr('viewBox', (-margin) + ' ' + (-margin) + ' ' + (radius*2+margin*2) + ' '  + (radius*2+margin*2))
+    .attr('viewBox', (-margin) + ' ' + (-margin) + ' ' + (radius * 2 + margin * 2) + ' ' + (radius * 2 + margin * 2))
     .append('g')
     .attr('transform', 'translate(' + radius + ',' + radius + ') rotate(' + rotation + ')');
 
@@ -380,14 +394,14 @@ function create() {
   grad1.append('stop')
     .attr('offset', '100%')
     .attr('stop-color', d3.rgb(bordercolors[1]).darker(bordercolor / 10));
-    /*
-  grad1.append('stop')
-    .attr('offset', '96%')
-    .attr('stop-color', '#424242');
-  grad1.append('stop')
-    .attr('offset', '100%')
-    .attr('stop-color', '#8c8c8c');
-    */
+  /*
+grad1.append('stop')
+  .attr('offset', '96%')
+  .attr('stop-color', '#424242');
+grad1.append('stop')
+  .attr('offset', '100%')
+  .attr('stop-color', '#8c8c8c');
+  */
 
   // figure out the arc size
   var arcsizes = [0];
@@ -395,12 +409,12 @@ function create() {
   for (i = 0; i < rings; i++)
     arcsizes.push(Math.floor(Math.random() * ringvariance) + 1);
 
-  var arcsizessum = arcsizes.reduce(function(a, b) { return a + b; });
+  var arcsizessum = arcsizes.reduce(function (a, b) { return a + b; });
   var ringunitsize = radius / arcsizessum;
 
   var arcradius = [radius];
   for (i = 1; i <= rings; i++)
-    arcradius[i] = arcradius[i-1] - (arcsizes[i] * ringunitsize);
+    arcradius[i] = arcradius[i - 1] - (arcsizes[i] * ringunitsize);
 
   // make the outermost ring first (the outline / border)
   svg.append('circle')
@@ -413,11 +427,11 @@ function create() {
   for (i = 0; i < rings; i++) {
     pie = d3.layout.pie()
       .sort(null)
-      .value(function(d) { return Math.floor(Math.random() * divisionvariance + 1); });
+      .value(function (d) { return Math.floor(Math.random() * divisionvariance + 1); });
 
     arc = d3.svg.arc()
       .innerRadius(arcradius[i])
-      .outerRadius(arcradius[i+1]);
+      .outerRadius(arcradius[i + 1]);
 
     svg.selectAll('g')
       .data(pie(data))
@@ -428,7 +442,12 @@ function create() {
       .attr('stroke', strokecolor)
       .attr('stroke-width', strokewidth + 'px')
       .attr('shape-rendering', strokewidth === 0 ? 'crispEdges' : 'auto')
-      .attr('fill', function(d, j) {
+      .attr('ryb', function (d, j) {
+        var ryb = d.data.neutrals[i];
+        var color = RXB.stepcolor(ryb, brightness / 255, 255);
+        return d3.rgb.apply(d3, color);
+      })
+      .attr('fill', function (d, j) {
         // figure out the background color
         this.style.cursor = 'crosshair';
         var d3this = d3.select(this);
@@ -441,16 +460,16 @@ function create() {
         else
           return d3.rgb.apply(d3, color);
       }).on('click', onclick)
-      .on('mousedown', function() {
+      .on('mousedown', function () {
         mousedown = true;
-      }).on('mouseup', function() {
+      }).on('mouseup', function () {
         mousedown = false;
-      }).on('mouseover', function(d) {
+      }).on('mouseover', function (d) {
         if (mousedown) {
           // simulate click
           onclick.call(this);
         }
-      }).append('svg:title').text(function() {
+      }).append('svg:title').text(function () {
         // tooltip
         return this.parentNode.getAttribute('fill');
       });
@@ -461,18 +480,21 @@ function create() {
       last_element_clicked = d3this;
 
       var rgb = this.getAttribute('fill');
+      var ryb = this.getAttribute('ryb');
 
       // set the color preview and input field with the RGB value
       colorpreview_div.style.backgroundColor = rgb;
       colorpreview_div.title = rgb;
+      colorpreviewryb_input.value = ryb;
       colorpreviewrgb_input.value = rgb;
 
       // figure out the neutrals
-      var neutrals = RXB.neutrals(d3this.data()[0].data.neutrals[+d3this.attr('ring')], brightness/255, numneutrals);
+      var neutrals = RXB.neutrals(d3this.data()[0].data.neutrals[+d3this.attr('ring')], brightness / 255, numneutrals);
       colorpreviewneutrals_div.innerHTML = '';
       for (var i = 0; i < numneutrals; i++) {
         var d = document.createElement('div');
         var colors = neutrals[i];
+        var rybHex = '#' + RXB.rxb2hex(colors);
         if (isinterpolated)
           colors = RXB.ryb2rgb(colors);
         var hex = '#' + RXB.rxb2hex(colors);
@@ -482,19 +504,20 @@ function create() {
         d.style.cursor = 'crosshair';
         d.title = hex;
         d.className = 'neutrals';
-        d.onclick = function() {
+        d.onclick = function () {
           // set the color preview and input field with the RGB value
           var hex = this.title;
           colorpreview_div.style.backgroundColor = hex;
+          colorpreviewryb_input.value = rybHex;
           colorpreviewrgb_input.value = hex;
         };
-        d.onmousedown = function() {
+        d.onmousedown = function () {
           mousedown = true;
         };
-        d.onmouseup = function() {
+        d.onmouseup = function () {
           mousedown = false;
         };
-        d.onmouseover = function() {
+        d.onmouseover = function () {
           if (mousedown)
             d.onclick.call(this);
         };
@@ -524,7 +547,7 @@ function download_png() {
 
   var image = new Image();
   image.src = 'data:image/svg+xml;base64,' + btoa(html);
-  image.onload = function() {
+  image.onload = function () {
     context.drawImage(image, 0, 0);
 
     var a = document.createElement('a');
@@ -532,7 +555,7 @@ function download_png() {
     try {
       a.href = canvas.toDataURL('image/png');
       a.click();
-    } catch(e) {
+    } catch (e) {
       var s = 'Error rendering PNG: see the "More Info" link for more information\n\n' + e;
       alert(s);
     }
@@ -560,7 +583,7 @@ function download_neutrals_png() {
 
   var size = (width / numneutrals) - margin;
 
-  var neutrals = RXB.neutrals(last_element_clicked.data()[0].data.neutrals[+last_element_clicked.attr('ring')], brightness/255, numneutrals);
+  var neutrals = RXB.neutrals(last_element_clicked.data()[0].data.neutrals[+last_element_clicked.attr('ring')], brightness / 255, numneutrals);
 
   var canvas = document.createElement('canvas');
   canvas.width = width + margin;
@@ -578,7 +601,7 @@ function download_neutrals_png() {
       colors = RXB.ryb2rgb(colors);
     var hex = '#' + RXB.rxb2hex(colors);
     context.fillStyle = hex;
-    context.fillRect((size * i) + (margin * (i+1)), margin, size, height);
+    context.fillRect((size * i) + (margin * (i + 1)), margin, size, height);
   }
 
   var a = document.createElement('a');
@@ -656,7 +679,7 @@ function apply_mask(mask) {
 
   var pie = d3.layout.pie()
     .sort(null)
-    .value(function(d, i) {
+    .value(function (d, i) {
       /*
       if (d) {
         var a = maskspread * divisions / data.length / 10;
@@ -684,10 +707,10 @@ function apply_mask(mask) {
     .attr('d', arc)
     .attr('class', 'mask')
     .attr('stroke', maskcolor)
-    .on('mouseup', function() {
+    .on('mouseup', function () {
       mousedown = false;
     })
-    .attr('fill', function(d, i) {
+    .attr('fill', function (d, i) {
       this.style.visibility = d.data ? 'hidden' : 'visible';
       this.style.cursor = d.data ? 'crosshair' : 'auto';
       return maskcolor;
